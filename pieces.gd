@@ -39,32 +39,26 @@ func check():
 	# checks for checks and checkmate based on whos turn
 	# highlights opponents pieces that make check
 	# checks for players pieces that cannot be moved 
-	# highlights players pieces that cannot be moved (on hover or always? -> if on hover we could use func protecting() above)
+	# highlights players pieces that cannot be moved (on hover or always? -> if on hover we could use func protecting() above? and call it in select)
 	pass
 
-func showMoves():
+func showMoves(start, end, knightKing = false):
 	var tempCell
 	# TODO add check to make sure other piece is not in way
 	#  maybe we call showMoves multiple times from with [piece]Move() and make sure when we append we append in order from distance from piece away
 	# and we call the function for each direction depending on the piece
-	# IMPORTANT: does not work for pawns, and i think not knights or kings 
-	if (whiteTurn):
-		for i in moveArray:
-			tempCell = get_cellv(i)
-			if (tempCell == -1):
-				moveTileMap.set_cellv(i, 2)
-			elif (tempCell > 0 && tempCell < 7):
-				moveTileMap.set_cellv(i, 1)
-			else:
+	# should not show moves that king cannot make
+	# IMPORTANT: does not work for pawns 
+	for i in moveArray:
+		tempCell = get_cellv(i)
+		if (tempCell == -1):
+			moveTileMap.set_cellv(i, 2)
+		elif (tempCell > start && tempCell < end):
+			moveTileMap.set_cellv(i, 1)
+			if (!knightKing):
 				break
-	else:
-		for i in moveArray:
-			tempCell = get_cellv(i)
-			if (tempCell == -1):
-				moveTileMap.set_cellv(i, 2)
-			elif (tempCell > 6 && tempCell < 13):
-				moveTileMap.set_cellv(i, 1)
-			else:
+		else:
+			if (!knightKing):
 				break
 	moveArray.clear()
 
@@ -72,13 +66,16 @@ func pawnMove(start, end, pawnDir, row):
 	# pawn is selected display cells where they can move
 	# TODO en passant special move
 	var tempCell
+	# pawns in start position
 	if (y_coord == row):
 		if (get_cell(x_coord, y_coord + pawnDir) == -1):
 			moveTileMap.set_cell(x_coord, y_coord + pawnDir, 2)
 			if (get_cell(x_coord, y_coord + pawnDir + pawnDir) == -1):
 				moveTileMap.set_cell(x_coord, y_coord + pawnDir + pawnDir, 2)
+	# move forward one
 	elif (get_cell(x_coord, y_coord + pawnDir) == -1):
 		moveTileMap.set_cell(x_coord, y_coord + pawnDir, 2)
+	# pawn attacks
 	tempCell = get_cell(x_coord - 1, y_coord + pawnDir)
 	if (tempCell > start && tempCell < end):
 		moveTileMap.set_cell(x_coord - 1, y_coord + pawnDir, 1)
@@ -90,53 +87,130 @@ func pawnPromotion():
 	#pawn made it to the other end can turn into queen, bishop, rook, or knight
 	pass
 
-func knightMove():
+func knightMove(start, end):
 	#knight is selected display cells where they can move
-	pass
+	moveArray.append(Vector2(x_coord - 1, y_coord + 2))
+	moveArray.append(Vector2(x_coord + 1, y_coord + 2))
+	moveArray.append(Vector2(x_coord - 1, y_coord - 2))
+	moveArray.append(Vector2(x_coord + 1, y_coord - 2))
+	moveArray.append(Vector2(x_coord + 2, y_coord + 1))
+	moveArray.append(Vector2(x_coord + 2, y_coord - 1))
+	moveArray.append(Vector2(x_coord - 2, y_coord + 1))
+	moveArray.append(Vector2(x_coord - 2, y_coord - 1))
+	showMoves(start, end, true)
 	
-func rookMove():
+func rookMove(start, end):
 	#rook is selected display cells where they can move
-	pass
+	cross(start, end)
 	
-func bishopMove():
+func bishopMove(start, end):
 	#bishop is selected display cells where they can move
-	pass
+	diagonal(start, end)
 	
-func kingMove():
+func kingMove(start, end):
 	#king is selected display cells where they can move
 	#remember weird move with rook (castling)
-	pass
+	#up/down
+	moveArray.append(Vector2(x_coord, y_coord + 1))
+	moveArray.append(Vector2(x_coord, y_coord - 1))
+	#left/right
+	moveArray.append(Vector2(x_coord + 1, y_coord))
+	moveArray.append(Vector2(x_coord- 1, y_coord))
+	# diagonals
+	moveArray.append(Vector2(x_coord + 1, y_coord - 1))
+	moveArray.append(Vector2(x_coord- 1, y_coord - 1))
+	moveArray.append(Vector2(x_coord + 1, y_coord + 1))
+	moveArray.append(Vector2(x_coord- 1, y_coord + 1))
+	showMoves(start, end, true)
 	
-func queenMove():
+func queenMove(start, end):
 	#queen is selected display cells where they can move
-	pass
+	diagonal(start, end)
+	cross(start, end)
 	
-func diagonal():
+func diagonal(start, end):
 	#upper left diagonal
-	showMoves()
+	var temp_x = x_coord
+	var temp_y = y_coord
+	while (temp_x > 0 && temp_y > 0):
+		temp_x -= 1
+		temp_y -= 1
+		moveArray.append(Vector2(temp_x, temp_y))
+	showMoves(start, end)
+	
 	# upper right diagonal
-	showMoves()
+	temp_x = x_coord
+	temp_y = y_coord
+	while (temp_x < 9 && temp_y > 0):
+		temp_x += 1
+		temp_y -= 1
+		moveArray.append(Vector2(temp_x, temp_y))
+	showMoves(start, end)
+	
 	# lower left diagonal
-	showMoves()
+	temp_x = x_coord
+	temp_y = y_coord
+	while (temp_x > 0 && temp_y < 9):
+		temp_x -= 1
+		temp_y += 1
+		moveArray.append(Vector2(temp_x, temp_y))
+	showMoves(start, end)
+	
 	# lower right diagonal
-	showMoves()
+	temp_x = x_coord
+	temp_y = y_coord
+	while (temp_x < 9 && temp_y < 9):
+		temp_x += 1
+		temp_y += 1
+		moveArray.append(Vector2(temp_x, temp_y))
+	showMoves(start, end)
 
-
-func cross():
+func cross(start, end):
 	#up
-	showMoves()
-	#down
-	showMoves()
-	#left
-	showMoves()
-	#right
-	showMoves()
+	var temp = y_coord
+	while (temp > 0):
+		temp -= 1
+		moveArray.append(Vector2(x_coord, temp))
+	showMoves(start, end)
+	
+#	#down
+	temp = y_coord
+	while (temp < 9):
+		temp += 1
+		moveArray.append(Vector2(x_coord, temp))
+	showMoves(start, end)
+	
+#	#left
+	temp = x_coord
+	while (temp > 0):
+		temp -= 1
+		moveArray.append(Vector2(temp, y_coord))
+	showMoves(start, end)
+	
+#	#right
+	temp = x_coord
+	while (temp < 9):
+		temp += 1
+		moveArray.append(Vector2(temp, y_coord))
+	showMoves(start, end)
 	
 func makeMove():
 	# on mouse release if clicked on possible move 
 	# set previous cell to empty and new cell to cellID
 	#clear highlight tilemap
-	pass
+	if (moveTileMap.get_cellv(cell) > 0):
+		set_cellv(cell, get_cellv(selectedCell))
+		set_cellv(selectedCell, -1)
+		highlightTileMap.set_cellv(selectedCell, -1)
+		selectedCell = emptyCell
+		moveTileMap.clear()
+		if (whiteTurn):
+			whiteTurn = false
+		else:
+			whiteTurn = true
+
+
+
 
 func hover():
 	# we could probably rework it so selected highlight is on move instead i think it would be easier code to follow
@@ -164,27 +238,44 @@ func select(start, end):
 			y_coord = selectedCell.y
 			highlightTileMap.set_cellv(cell, 5)
 			match cellID:
-				1, 7:
-					# bishop
-					bishopMove()
-				2, 8:
-					# king
-					kingMove()
-				3, 9:
-					# knight
-					knightMove()
+				1:
+					#black bishop
+					bishopMove(6, 13)
+				7:
+					#white bishop
+					bishopMove(0, 7)
+				2:
+					#black king
+					kingMove(6, 13)
+				8:
+					#white king
+					kingMove(0, 7)
+				3:
+					#black knight
+					knightMove(6, 13)
+				9:
+					#white knight
+					knightMove(0, 7)
 				4:
 					# black pawn
-					pawnMove(start + 6, end + 6, 1, 2)
+					pawnMove(6, 13, 1, 2)
 				10:
 					# white pawn
-					pawnMove(13 - end, 13 - start, -1, 7)
-				5, 11:
-					# queen
-					queenMove()
-				6, 12:
-					# rook
-					rookMove()
+					pawnMove(0, 7, -1, 7)
+				5:
+					#black queen
+					queenMove(6, 13)
+				11:
+					#white queen
+					queenMove(0, 7)
+				6:
+					#black rook
+					rookMove(6, 13)
+				12:
+					#white rook
+					rookMove(0, 7)
 		else:
 			highlightTileMap.set_cellv(selectedCell, 0)
 			selectedCell = emptyCell
+	else:
+		makeMove()
