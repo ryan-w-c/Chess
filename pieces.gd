@@ -44,10 +44,7 @@ func check():
 
 func showMoves(start, end, knightKing = false):
 	var tempCell
-	# TODO add check to make sure other piece is not in way
-	#  maybe we call showMoves multiple times from with [piece]Move() and make sure when we append we append in order from distance from piece away
-	# and we call the function for each direction depending on the piece
-	# should not show moves that king cannot make
+	# TODO should not show moves that king cannot make
 	# IMPORTANT: does not work for pawns 
 	for i in moveArray:
 		tempCell = get_cellv(i)
