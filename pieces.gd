@@ -31,9 +31,13 @@ func _process(delta):
 	if (!checked):
 		checked = true
 		if (whiteTurn):
-			inCheck = diagonalCheck(6, 13, 5, 1, whiteKingCell) || crossCheck(6, 13, 5, 1, whiteKingCell)
+			if (diagonalCheck(6, 13, 5, 1, whiteKingCell) || crossCheck(6, 13, 5, 1, whiteKingCell)):
+				inCheck = true
+				findMoves(6, 13)
 		else:
-			inCheck = diagonalCheck(0, 7, 11, 7, blackKingCell) || crossCheck(0, 7, 11, 7, blackKingCell)
+			if (diagonalCheck(0, 7, 11, 7, blackKingCell) || crossCheck(0, 7, 11, 7, blackKingCell)):
+				inCheck = true
+				findMoves(0, 7)
 	# TODO if piece is highlighted from check make it non hoverable and non selectable
 	hover()
 	if (Input.is_action_just_released("on_left_click")):
@@ -59,13 +63,13 @@ func check(cell):
 	
 func findMoves(start, end):
 	var tiles = get_used_cells()
-	print (checkList)
+	var tempCell
 	for i in tiles:
-		if (get_cell(i.x, i.y) > start && get_cell(i.x, i.y) < end):
-			print(i.x, " ", i.y)
+		tempCell = get_cell(i.x, i.y)
+		if (tempCell > start && tempCell < end):
 			x_coord = i.x
 			y_coord = i.y
-			match cellID:
+			match tempCell:
 				1:
 					#black bishop
 					bishopMove(6, 13, true)
@@ -104,13 +108,18 @@ func findMoves(start, end):
 					rookMove(0, 7, true)
 	
 func evaluateMoves():
-	var temp = []
+	var tempKey = Vector2(x_coord, y_coord)
+	var temp
+	if (checkMoveDict.has(tempKey)):
+		temp = checkMoveDict[tempKey]
+	else:
+		temp = []
 	for i in moveArray:
 		if i in checkList:
 			temp.append(i)
-		if (!temp.empty()):
-			checkMoveDict[i] = temp.duplicate()
-		temp.clear()
+	if (!temp.empty()):
+		checkMoveDict[Vector2(x_coord, y_coord)] = temp
+	moveArray.clear()
 
 func diagonalCheck(start, end, queen, bishop, kingCell):
 	#upper left diagonal
@@ -474,21 +483,20 @@ func pawnMove(start, end, pawnDir, row, check = false):
 	if (check):
 		if (y_coord == row):
 			if (get_cell(x_coord, y_coord + pawnDir) == -1):
-				moveArray.append(x_coord, y_coord + pawnDir, 2)
+				moveArray.append(Vector2(x_coord, y_coord + pawnDir))
 				if (get_cell(x_coord, y_coord + pawnDir + pawnDir) == -1):
-					moveArray.append(x_coord, y_coord + pawnDir + pawnDir, 2)
+					moveArray.append(Vector2(x_coord, y_coord + pawnDir + pawnDir))
 		# move forward one
 		elif (get_cell(x_coord, y_coord + pawnDir) == -1):
-			moveArray.append(x_coord, y_coord + pawnDir, 2)
+			moveArray.append(Vector2(x_coord, y_coord + pawnDir))
 		# pawn attacks
 		tempCell = get_cell(x_coord - 1, y_coord + pawnDir)
 		if (tempCell > start && tempCell < end):
-			moveArray.append(x_coord - 1, y_coord + pawnDir, 1)
+			moveArray.append(Vector2(x_coord - 1, y_coord + pawnDir))
 		tempCell = get_cell(x_coord + 1, y_coord + pawnDir)
 		if (tempCell > start && tempCell < end):
-			moveArray.append(x_coord + 1, y_coord + pawnDir, 1)
+			moveArray.append(Vector2(x_coord + 1, y_coord + pawnDir))
 		evaluateMoves()
-		moveArray.clear()
 	else:
 		if (y_coord == row):
 			if (get_cell(x_coord, y_coord + pawnDir) == -1):
@@ -671,6 +679,8 @@ func makeMove():
 			whiteTurn = true
 		inCheck = false
 		checked = false
+		checkList.clear()
+		checkMoveDict.clear()
 
 func hover():
 	# we could probably rework it so selected highlight is on move instead i think it would be easier code to follow
@@ -694,7 +704,6 @@ func select(start, end):
 		if (cell != selectedCell):
 			highlightTileMap.set_cellv(selectedCell, -1)
 			if (inCheck):
-				findMoves(start, end)
 				if (cell in checkMoveDict):
 					# only display possible moves for cells in checkMoveDict
 					selectedCell = cell
@@ -703,54 +712,58 @@ func select(start, end):
 					highlightTileMap.set_cellv(cell, 5)
 					var tempCell
 					for i in checkMoveDict[cell]:
-						tempCell = get_cellv(i)
-						if (tempCell == -1):
-							moveTileMap.set_cellv(i, 2)
-						elif (tempCell > start && tempCell < end):
-							moveTileMap.set_cellv(i, 1)
+						if (i in checkList):
+							tempCell = get_cellv(i)
+							if (tempCell == -1):
+								# move is putting piece between king and opponent
+								moveTileMap.set_cellv(i, 2)
+							else:
+								# move is killing opponents piece
+								moveTileMap.set_cellv(i, 1)
 				else:
 					return
-			selectedCell = cell
-			x_coord = selectedCell.x
-			y_coord = selectedCell.y
-			highlightTileMap.set_cellv(cell, 5)
-			match cellID:
-				1:
-					#black bishop
-					bishopMove(6, 13)
-				7:
-					#white bishop
-					bishopMove(0, 7)
-				2:
-					#black king
-					kingMove(6, 13)
-				8:
-					#white king
-					kingMove(0, 7)
-				3:
-					#black knight
-					knightMove(6, 13)
-				9:
-					#white knight
-					knightMove(0, 7)
-				4:
-					# black pawn
-					pawnMove(6, 13, 1, 2)
-				10:
-					# white pawn
-					pawnMove(0, 7, -1, 7)
-				5:
-					#black queen
-					queenMove(6, 13)
-				11:
-					#white queen
-					queenMove(0, 7)
-				6:
-					#black rook
-					rookMove(6, 13)
-				12:
-					#white rook
-					rookMove(0, 7)
+			else:
+				selectedCell = cell
+				x_coord = selectedCell.x
+				y_coord = selectedCell.y
+				highlightTileMap.set_cellv(cell, 5)
+				match cellID:
+					1:
+						#black bishop
+						bishopMove(6, 13)
+					7:
+						#white bishop
+						bishopMove(0, 7)
+					2:
+						#black king
+						kingMove(6, 13)
+					8:
+						#white king
+						kingMove(0, 7)
+					3:
+						#black knight
+						knightMove(6, 13)
+					9:
+						#white knight
+						knightMove(0, 7)
+					4:
+						# black pawn
+						pawnMove(6, 13, 1, 2)
+					10:
+						# white pawn
+						pawnMove(0, 7, -1, 7)
+					5:
+						#black queen
+						queenMove(6, 13)
+					11:
+						#white queen
+						queenMove(0, 7)
+					6:
+						#black rook
+						rookMove(6, 13)
+					12:
+						#white rook
+						rookMove(0, 7)
 		else:
 			highlightTileMap.set_cellv(selectedCell, 0)
 			selectedCell = emptyCell
