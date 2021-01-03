@@ -107,16 +107,24 @@ func findMoves(start, end):
 					#white rook
 					rookMove(0, 7, true)
 	
-func evaluateMoves():
+func evaluateMoves(knightKing = false):
 	var tempKey = Vector2(x_coord, y_coord)
 	var temp
+	var tempCell
 	if (checkMoveDict.has(tempKey)):
 		temp = checkMoveDict[tempKey]
 	else:
 		temp = []
 	for i in moveArray:
-		if i in checkList:
-			temp.append(i)
+		tempCell = get_cellv(i)
+		if (tempCell == -1):
+			if i in checkList:
+				temp.append(i)
+		else:
+			if i in checkList:
+				temp.append(i)
+			if (!knightKing):
+				break
 	if (!temp.empty()):
 		checkMoveDict[Vector2(x_coord, y_coord)] = temp
 	moveArray.clear()
@@ -531,7 +539,7 @@ func knightMove(start, end, check = false):
 	if (!check):
 		showMoves(start, end, true)
 	else:
-		evaluateMoves()
+		evaluateMoves(true)
 	
 func rookMove(start, end, check = false):
 	#rook is selected display cells where they can move
@@ -559,7 +567,7 @@ func kingMove(start, end, check = false):
 	if (!check):
 		showMoves(start, end, true)
 	else:
-		evaluateMoves()
+		evaluateMoves(true)
 	
 func queenMove(start, end, check = false):
 	#queen is selected display cells where they can move
