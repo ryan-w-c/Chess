@@ -31,13 +31,15 @@ func _process(delta):
 	if (!checked):
 		checked = true
 		if (whiteTurn):
-			if (diagonalCheck(6, 13, 5, 1, whiteKingCell) || crossCheck(6, 13, 5, 1, whiteKingCell)):
+			if (diagonalCheck(6, 13, 5, 1, whiteKingCell) || crossCheck(6, 13, 5, 6, whiteKingCell)):
 				inCheck = true
 				findMoves(6, 13)
+				print(checkMoveDict)
 		else:
-			if (diagonalCheck(0, 7, 11, 7, blackKingCell) || crossCheck(0, 7, 11, 7, blackKingCell)):
+			if (diagonalCheck(0, 7, 11, 7, blackKingCell) || crossCheck(0, 7, 11, 12, blackKingCell)):
 				inCheck = true
 				findMoves(0, 7)
+				print(checkMoveDict)
 	# TODO if piece is highlighted from check make it non hoverable and non selectable
 	hover()
 	if (Input.is_action_just_released("on_left_click")):
@@ -305,8 +307,8 @@ func diagonalCheck(start, end, queen, bishop, kingCell):
 			break
 	return false
 			
-func crossCheck(start, end, queen, bishop, kingCell):
-	# left 
+func crossCheck(start, end, queen, rook, kingCell):
+	# up 
 	var temp_coord = kingCell.y
 	var count = 0
 	var space = 0
@@ -315,12 +317,12 @@ func crossCheck(start, end, queen, bishop, kingCell):
 		temp_coord -= 1
 		temp = get_cell(kingCell.x, temp_coord)
 		space += 1
-		if (temp != queen && temp != bishop && temp != -1):
-			#piece is not queen or bishop or clear
+		if (temp != queen && temp != rook && temp != -1):
+			#piece is not queen or rook or clear
 			count += 1
-		elif (temp == queen || temp == bishop):
+		elif (temp == queen || temp == rook):
 			if (count == 0):
-				# queen/ bishop is checking king (nothing between king and opponent)
+				# queen/ rook is checking king (nothing between king and opponent)
 				# king must move or piece must move between king and opponent
 				# solution: 
 				# find cells in between (inlcuding opponent cell) opponent and king put into list
@@ -335,48 +337,9 @@ func crossCheck(start, end, queen, bishop, kingCell):
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				temp = get_cell(kingCell.x, temp_coord)
-				while (temp != queen && temp != bishop && temp != -1):
+				while (temp != queen && temp != rook && temp != -1):
 					checkList.append(Vector2(kingCell.x, temp_coord))
 					temp_coord += 1
-				if (temp > start && temp < end):
-					# piece is player's piece
-					checkMoveDict.insert(Vector2(kingCell.x, temp_coord), checkList.duplicate())
-				checkList.clear()
-		if (count == 2):
-			#two pieces protecting king we dont care about the rest
-			break
-	
-	# right
-	temp_coord = kingCell.y
-	count = 0
-	space = 0
-	while (temp_coord > 0):
-		temp_coord += 1
-		temp = get_cell(kingCell.x, temp_coord)
-		space += 1
-		if (temp != queen && temp != bishop && temp != -1):
-			#piece is not queen or bishop or clear
-			count += 1
-		elif (temp == queen || temp == bishop):
-			if (count == 0):
-				# queen/ bishop is checking king (nothing between king and opponent)
-				# king must move or piece must move between king and opponent
-				# solution: 
-				# find cells in between (inlcuding opponent cell) opponent and king put into list
-				# loop over all players pieces find moves if moves in list put piece into dict and playable moves
-				# player only sees those moves
-				while (space > 0):
-					checkList.append(Vector2(kingCell.x, temp_coord))
-					temp_coord -= 1
-					space -= 1
-				return true
-			else:
-				# count == 1 -> one piece between king and opponent
-				# piece cannot move off slope (only move upper left)
-				temp = get_cell(kingCell.x, temp_coord)
-				while (temp != queen && temp != bishop && temp != -1):
-					checkList.append(Vector2(kingCell.x, temp_coord))
-					temp_coord -= 1
 				if (temp > start && temp < end):
 					# piece is player's piece
 					checkMoveDict.insert(Vector2(kingCell.x, temp_coord), checkList.duplicate())
@@ -386,27 +349,66 @@ func crossCheck(start, end, queen, bishop, kingCell):
 			break
 	
 	# down
+	temp_coord = kingCell.y
+	count = 0
+	space = 0
+	while (temp_coord > 0):
+		temp_coord += 1
+		temp = get_cell(kingCell.x, temp_coord)
+		space += 1
+		if (temp != queen && temp != rook && temp != -1):
+			#piece is not queen or rook or clear
+			count += 1
+		elif (temp == queen || temp == rook):
+			if (count == 0):
+				# queen/ rook is checking king (nothing between king and opponent)
+				# king must move or piece must move between king and opponent
+				# solution: 
+				# find cells in between (inlcuding opponent cell) opponent and king put into list
+				# loop over all players pieces find moves if moves in list put piece into dict and playable moves
+				# player only sees those moves
+				while (space > 0):
+					checkList.append(Vector2(kingCell.x, temp_coord))
+					temp_coord -= 1
+					space -= 1
+				return true
+			else:
+				# count == 1 -> one piece between king and opponent
+				# piece cannot move off slope (only move upper left)
+				temp = get_cell(kingCell.x, temp_coord)
+				while (temp != queen && temp != rook && temp != -1):
+					checkList.append(Vector2(kingCell.x, temp_coord))
+					temp_coord -= 1
+				if (temp > start && temp < end):
+					# piece is player's piece
+					checkMoveDict.insert(Vector2(kingCell.x, temp_coord), checkList.duplicate())
+				checkList.clear()
+		if (count == 2):
+			#two pieces protecting king we dont care about the rest
+			break
+	
+	# right
 	temp_coord = kingCell.x
 	count = 0
 	space = 0
 	temp
 	while (temp_coord > 0):
 		temp_coord += 1
-		temp = get_cell(temp_coord, kingCell.x)
+		temp = get_cell(temp_coord, kingCell.y)
 		space += 1
-		if (temp != queen && temp != bishop && temp != -1):
-			#piece is not queen or bishop or clear
+		if (temp != queen && temp != rook && temp != -1):
+			#piece is not queen or rook or clear
 			count += 1
-		elif (temp == queen || temp == bishop):
+		elif (temp == queen || temp == rook):
 			if (count == 0):
-				# queen/ bishop is checking king (nothing between king and opponent)
+				# queen/ rook is checking king (nothing between king and opponent)
 				# king must move or piece must move between king and opponent
 				# solution: 
 				# find cells in between (inlcuding opponent cell) opponent and king put into list
 				# loop over all players pieces find moves if moves in list put piece into dict and playable moves
 				# player only sees those moves
 				while (space > 0):
-					checkList.append(Vector2(temp_coord, kingCell.x))
+					checkList.append(Vector2(temp_coord, kingCell.y))
 					temp_coord -= 1
 					space -= 1
 				return true
@@ -414,52 +416,52 @@ func crossCheck(start, end, queen, bishop, kingCell):
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				temp = get_cell(temp_coord, kingCell.x)
-				while (temp != queen && temp != bishop && temp != -1):
-					checkList.append(Vector2(temp_coord, kingCell.x))
+				while (temp != queen && temp != rook && temp != -1):
+					checkList.append(Vector2(temp_coord, kingCell.y))
 					temp_coord -= 1
 				if (temp > start && temp < end):
 					# piece is player's piece
-					checkMoveDict.insert(Vector2(temp_coord, kingCell.x), checkList.duplicate())
+					checkMoveDict.insert(Vector2(temp_coord, kingCell.y), checkList.duplicate())
 				checkList.clear()
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
 
-	# up
+	# left
 	temp_coord = kingCell.x
 	count = 0
 	space = 0
 	temp
 	while (temp_coord > 0):
 		temp_coord -= 1
-		temp = get_cell(temp_coord, kingCell.x)
+		temp = get_cell(temp_coord, kingCell.y)
 		space += 1
-		if (temp != queen && temp != bishop && temp != -1):
-			#piece is not queen or bishop or clear
+		if (temp != queen && temp != rook && temp != -1):
+			#piece is not queen or rook or clear
 			count += 1
-		elif (temp == queen || temp == bishop):
+		elif (temp == queen || temp == rook):
 			if (count == 0):
-				# queen/ bishop is checking king (nothing between king and opponent)
+				# queen/ rook is checking king (nothing between king and opponent)
 				# king must move or piece must move between king and opponent
 				# solution: 
 				# find cells in between (inlcuding opponent cell) opponent and king put into list
 				# loop over all players pieces find moves if moves in list put piece into dict and playable moves
 				# player only sees those moves
 				while (space > 0):
-					checkList.append(Vector2(temp_coord, kingCell.x))
+					checkList.append(Vector2(temp_coord, kingCell.y))
 					temp_coord += 1
 					space -= 1
 				return true
 			else:
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
-				temp = get_cell(temp_coord, kingCell.x)
-				while (temp != queen && temp != bishop && temp != -1):
-					checkList.append(Vector2(temp_coord, kingCell.x))
+				temp = get_cell(temp_coord, kingCell.y)
+				while (temp != queen && temp != rook && temp != -1):
+					checkList.append(Vector2(temp_coord, kingCell.y))
 					temp_coord += 1
 				if (temp > start && temp < end):
 					# piece is player's piece
-					checkMoveDict.insert(Vector2(temp_coord, kingCell.x), checkList.duplicate())
+					checkMoveDict.insert(Vector2(temp_coord, kingCell.y), checkList.duplicate())
 				checkList.clear()
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
