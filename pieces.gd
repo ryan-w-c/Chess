@@ -833,12 +833,11 @@ func kingMove(start, end, kingCell, knight, pawn, pawnDir, queen, bishop, rook):
 	moveArray.append(Vector2(kingCell.x - 1, kingCell.y + 1))
 	for i in moveArray.duplicate():
 		temp = get_cellv(i)
-		if (temp != -1 || (temp > start && temp < end)):
+		if (temp > start && temp < end || temp == 13):
 			moveArray.erase(i)
 	for i in moveArray.duplicate():
 		if (checkKingMove(start, end, i, knight, pawn, pawnDir, queen, bishop, rook)):
 			moveArray.erase(i)
-
 	checkMoveDict[kingCell] = moveArray.duplicate()
 	moveArray.clear()
 		
