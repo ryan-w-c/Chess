@@ -4,7 +4,8 @@ onready var highlightTileMap = get_parent().get_node("highlight")
 onready var moveTileMap = get_parent().get_node("move")
 var whiteTurn : bool = true
 var inCheck : bool = false
-var checked : bool = false
+var checked : bool = false #if we have checked for a check
+var checkCount = 0
 var last
 var cell
 var selectedCell
@@ -18,6 +19,7 @@ var blackKingCell = Vector2(5, 1)
 var checkList = []
 var finalCheckList = []
 var checkMoveDict = {}
+var indirectCheckMoveDict = {}
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -32,19 +34,23 @@ func _process(delta):
 	if (!checked):
 		checked = true
 		if (whiteTurn):
+			kingMove(6, 13, whiteKingCell, 3, 4, -1, 5, 1, 6)
+			pawnKnightCheck(whiteKingCell, 3, 4, -1)
 			indirectDiagonalCheck(6, 13, 5, 1, whiteKingCell)
 			indirectCrossCheck(6, 13, 5, 6, whiteKingCell)
-			if (!checkMoveDict.empty() || inCheck):
+			if (!indirectCheckMoveDict.empty() || inCheck):
 				findMoves(6, 13)
-				print(checkMoveDict)
-				print(inCheck)
 		else:
+			kingMove(0, 7, blackKingCell, 9, 10, 1, 11, 7, 12)
+			pawnKnightCheck(blackKingCell, 9, 10, 1)
 			indirectDiagonalCheck(0, 7, 11, 7, blackKingCell)
 			indirectCrossCheck(0, 7, 11, 12, blackKingCell)
-			if (!checkMoveDict.empty() || inCheck):
+			if (!indirectCheckMoveDict.empty() || inCheck):
 				findMoves(0, 7)
-				print(checkMoveDict)
-				print(inCheck)
+		print(checkMoveDict)
+		print(inCheck)
+		print(indirectCheckMoveDict)
+		print(finalCheckList)
 	# TODO if piece is highlighted from check make it non hoverable and non selectable
 	hover()
 	if (Input.is_action_just_released("on_left_click")):
@@ -53,75 +59,157 @@ func _process(delta):
 		else:
 			select(0, 7)
 		
-func protecting():
-	# returns true if cell cannot be moved because protecting king
-	# else returns false
-	pass
+func pawnKnightCheck(kingCell, knight, pawn, pawnDir):
+	# puts cells into finalCheckList if pawn or knigh is checking king
+	#knight:
+	var temp_x = kingCell.x - 1
+	var temp_y = kingCell.y + 2
+	#-1, +2
+	if (get_cell(temp_x, temp_y) == knight):
+		finalCheckList.append(Vector2(temp_x, temp_y))
+	temp_y -= 4
+	#-1, -2
+	if (get_cell(temp_x, temp_y) == knight):
+		finalCheckList.append(Vector2(temp_x, temp_y))
+	#+1, -2
+	temp_x += 2
+	if (get_cell(temp_x, temp_y) == knight):
+		finalCheckList.append(Vector2(temp_x, temp_y))
+	#+1, +2
+	temp_y += 4
+	if (get_cell(temp_x, temp_y) == knight):
+		finalCheckList.append(Vector2(temp_x, temp_y))
+	#+2, +1
+	temp_x += 1
+	temp_y -= 1
+	if (get_cell(temp_x, temp_y) == knight):
+		finalCheckList.append(Vector2(temp_x, temp_y))
+	temp_y -= 2
+	#+2, -1
+	if (get_cell(temp_x, temp_y) == knight):
+		finalCheckList.append(Vector2(temp_x, temp_y))
+	temp_x -= 4
+	#-2, -1
+	if (get_cell(temp_x, temp_y) == knight):
+		finalCheckList.append(Vector2(temp_x, temp_y))
+	temp_y += 2
+	#-2, +1
+	if (get_cell(temp_x, temp_y) == knight):
+		finalCheckList.append(Vector2(temp_x, temp_y))
+	#pawn:
+	if (get_cell(kingCell.x + 1, kingCell.y + pawnDir) == pawn):
+		finalCheckList.append(Vector2(kingCell.x + 1, kingCell.y + pawnDir))
+	if (get_cell(kingCell.x - 1, kingCell.y + pawnDir) == pawn):
+		finalCheckList.append(Vector2(kingCell.x - 1, kingCell.y + pawnDir))
+	if (!finalCheckList.empty()):
+		inCheck = true
 
-func check(cell):
-	# checks for checks and checkmate based on whos turn
-	# highlights opponents pieces that make check
-	# checks for players pieces that cannot be moved 
-	# highlights players pieces that cannot be moved (on hover or always? -> if on hover we could use func protecting() above? and call it in select)
-	
-		# opponent directly cheching king
-#		findMove()
-	pass
-	
 func findMoves(start, end):
 	var tiles = get_used_cells()
 	var tempCell
-	for i in tiles:
-		tempCell = get_cell(i.x, i.y)
-		if (tempCell > start && tempCell < end):
-			x_coord = i.x
-			y_coord = i.y
-			match tempCell:
-				1:
-					#black bishop
-					bishopMove(6, 13, true)
-				7:
-					#white bishop
-					bishopMove(0, 7, true)
-				2:
-					#black king
-					kingMove(6, 13, true)
-				8:
-					#white king
-					kingMove(0, 7, true)
-				3:
-					#black knight
-					knightMove(6, 13, true)
-				9:
-					#white knight
-					knightMove(0, 7, true)
-				4:
-					# black pawn
-					pawnMove(6, 13, 1, 2, true)
-				10:
-					# white pawn
-					pawnMove(0, 7, -1, 7, true)
-				5:
-					#black queen
-					queenMove(6, 13, true)
-				11:
-					#white queen
-					queenMove(0, 7, true)
-				6:
-					#black rook
-					rookMove(6, 13, true)
-				12:
-					#white rook
-					rookMove(0, 7, true)
+	if (inCheck):
+		for i in tiles:
+			tempCell = get_cell(i.x, i.y)
+			if (tempCell > start && tempCell < end):
+				x_coord = i.x
+				y_coord = i.y
+				match tempCell:
+					1:
+						#black bishop
+						bishopMove(6, 13, true)
+					7:
+						#white bishop
+						bishopMove(0, 7, true)
+#					2:
+#						#black king
+#						kingMove(6, 13, true)
+#					8:
+#						#white king
+#						kingMove(0, 7, true)
+					3:
+						#black knight
+						knightMove(6, 13, true)
+					9:
+						#white knight
+						knightMove(0, 7, true)
+					4:
+						# black pawn
+						pawnMove(6, 13, 1, 2, true)
+					10:
+						# white pawn
+						pawnMove(0, 7, -1, 7, true)
+					5:
+						#black queen
+						queenMove(6, 13, true)
+					11:
+						#white queen
+						queenMove(0, 7, true)
+					6:
+						#black rook
+						rookMove(6, 13, true)
+					12:
+						#white rook
+						rookMove(0, 7, true)
+	else:
+		for i in indirectCheckMoveDict:
+			tempCell = get_cell(i.x, i.y)
+			if (tempCell > start && tempCell < end):
+				x_coord = i.x
+				y_coord = i.y
+				match tempCell:
+					1:
+						#black bishop
+						bishopMove(6, 13, true)
+					7:
+						#white bishop
+						bishopMove(0, 7, true)
+#					2:
+#						#black king
+#						kingMove(6, 13, true)
+#					8:
+#						#white king
+#						kingMove(0, 7, true)
+					3:
+						#black knight
+						knightMove(6, 13, true)
+					9:
+						#white knight
+						knightMove(0, 7, true)
+					4:
+						# black pawn
+						pawnMove(6, 13, 1, 2, true)
+					10:
+						# white pawn
+						pawnMove(0, 7, -1, 7, true)
+					5:
+						#black queen
+						queenMove(6, 13, true)
+					11:
+						#white queen
+						queenMove(0, 7, true)
+					6:
+						#black rook
+						rookMove(6, 13, true)
+					12:
+						#white rook
+						rookMove(0, 7, true)
 	
 func evaluateMoves(knightKing = false):
 	var tempKey = Vector2(x_coord, y_coord)
 	var potentialMoves
 	var realMoves = []
 	var tempCell
-	if (checkMoveDict.has(tempKey)):
+	var found = false
+	if (indirectCheckMoveDict.has(tempKey)):
 		#indirectCheck
-		potentialMoves = checkMoveDict[tempKey]
+		if (checkMoveDict.has(tempKey)):
+			realMoves = checkMoveDict.get(tempKey)
+		potentialMoves = indirectCheckMoveDict.get(tempKey)
+#		print(moveArray)
+#		print(realMoves)
+#		print(checkMoveDict)
+#		print("eval: ", x_coord, y_coord, potentialMoves)
+		
 		for i in moveArray:
 			tempCell = get_cellv(i)
 			if (tempCell == -1):
@@ -130,25 +218,24 @@ func evaluateMoves(knightKing = false):
 			else:
 				if i in potentialMoves:
 					realMoves.append(i)
-				if (!knightKing):
-					break
-	else:
-		#direct check
-		for i in moveArray:
-			tempCell = get_cellv(i)
-			if (tempCell == -1):
-				if i in finalCheckList:
-					realMoves.append(i)
-			else:
-				if i in finalCheckList:
-					realMoves.append(i)
-				if (!knightKing):
-					break
-	if (!realMoves.empty()):
+#		print(realMoves)
 		checkMoveDict[Vector2(x_coord, y_coord)] = realMoves
+	if (!checkMoveDict.has(tempKey) && inCheck):
+		for i in moveArray:
+			tempCell = get_cellv(i)
+			if (tempCell == -1):
+				if i in finalCheckList:
+					realMoves.append(i)
+			else:
+				if i in finalCheckList:
+					realMoves.append(i)
+				if (!knightKing):
+					break
+		if (!realMoves.empty()):
+			checkMoveDict[Vector2(x_coord, y_coord)] = realMoves
 	moveArray.clear()
 	
-func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
+func indirectDiagonalCheck(start, end, queen, bishop, kingCell, checkKing = false):
 	#upper left diagonal
 	var temp_x = kingCell.x
 	var temp_y = kingCell.y
@@ -169,9 +256,14 @@ func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
 			count += 1
 		elif (temp == queen || temp == bishop):
 			if (count == 0):
+				if (checkKing):
+					return true
 				upperLeftCheck(temp_x, temp_y, space)
 				inCheck = true
-			else:
+				checkCount += 1
+			elif (!checkKing):
+				if (indirectCheckMoveDict.has(Vector2(kingCell.x, kingCell.y))):
+					checkList = indirectCheckMoveDict.get(Vector2(kingCell.x, kingCell.y))
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				checkList.append(Vector2(temp_x, temp_y))
@@ -187,13 +279,18 @@ func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
 					temp = get_cell(temp_x, temp_y)
 				peice_x = temp_x
 				peice_y = temp_y
+				temp_x += 1
+				temp_y += 1
+				space -= 1
 				while (space > 0):
 					checkList.append(Vector2(temp_x, temp_y))
 					temp_x += 1
 					temp_y += 1
 					space -= 1
-				checkMoveDict[Vector2(peice_x, peice_y)] = checkList.duplicate()
+#				print("Indirect: ", peice_x, peice_y, checkList)
+				indirectCheckMoveDict[Vector2(peice_x, peice_y)] = checkList.duplicate()
 				checkList.clear()
+				checkCount += 1
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
@@ -215,9 +312,14 @@ func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
 			count += 1
 		elif (temp == queen || temp == bishop):
 			if (count == 0):
+				if (checkKing):
+					return true
 				upperRightCheck(temp_x, temp_y, space)
 				inCheck = true
-			else:
+				checkCount += 1
+			elif (!checkKing):
+				if (indirectCheckMoveDict.has(Vector2(kingCell.x, kingCell.y))):
+					checkList = indirectCheckMoveDict.get(Vector2(kingCell.x, kingCell.y))
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				checkList.append(Vector2(temp_x, temp_y))
@@ -233,13 +335,18 @@ func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
 					temp = get_cell(temp_x, temp_y)
 				peice_x = temp_x
 				peice_y = temp_y
+				temp_x -= 1
+				temp_y += 1
+				space -= 1
 				while (space > 0):
 					checkList.append(Vector2(temp_x, temp_y))
 					temp_x -= 1
 					temp_y += 1
 					space -= 1
-				checkMoveDict[Vector2(peice_x, peice_y)] = checkList.duplicate()
+#				print("Indirect: ", peice_x, peice_y, checkList)
+				indirectCheckMoveDict[Vector2(peice_x, peice_y)] = checkList.duplicate()
 				checkList.clear()
+				checkCount += 1
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
@@ -261,9 +368,14 @@ func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
 			count += 1
 		elif (temp == queen || temp == bishop):
 			if (count == 0):
+				if (checkKing):
+					return true
 				lowerLeftCheck(temp_x, temp_y, space)
 				inCheck = true
-			else:
+				checkCount += 1
+			elif (!checkKing):
+				if (indirectCheckMoveDict.has(Vector2(kingCell.x, kingCell.y))):
+					checkList = indirectCheckMoveDict.get(Vector2(kingCell.x, kingCell.y))
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				checkList.append(Vector2(temp_x, temp_y))
@@ -279,13 +391,18 @@ func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
 					temp = get_cell(temp_x, temp_y)
 				peice_x = temp_x
 				peice_y = temp_y
+				temp_x += 1
+				temp_y -= 1
+				space -= 1
 				while (space > 0):
 					checkList.append(Vector2(temp_x, temp_y))
 					temp_x += 1
 					temp_y -= 1
 					space -= 1
-				checkMoveDict[Vector2(peice_x, peice_y)] = checkList.duplicate()
+#				print("Indirect: ", peice_x, peice_y, checkList)
+				indirectCheckMoveDict[Vector2(peice_x, peice_y)] = checkList.duplicate()
 				checkList.clear()
+				checkCount += 1
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
@@ -307,9 +424,14 @@ func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
 			count += 1
 		elif (temp == queen || temp == bishop):
 			if (count == 0):
+				if (checkKing):
+					return true
 				lowerRightCheck(temp_x, temp_y, space)
 				inCheck = true
-			else:
+				checkCount += 1
+			elif (!checkKing):
+				if (indirectCheckMoveDict.has(Vector2(kingCell.x, kingCell.y))):
+					checkList = indirectCheckMoveDict.get(Vector2(kingCell.x, kingCell.y))
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				checkList.append(Vector2(temp_x, temp_y))
@@ -325,18 +447,24 @@ func indirectDiagonalCheck(start, end, queen, bishop, kingCell):
 					temp = get_cell(temp_x, temp_y)
 				peice_x = temp_x
 				peice_y = temp_y
+				temp_x -= 1
+				temp_y -= 1
+				space -= 1
 				while (space > 0):
 					checkList.append(Vector2(temp_x, temp_y))
 					temp_x -= 1
 					temp_y -= 1
 					space -= 1
-				checkMoveDict[Vector2(peice_x, peice_y)] = checkList.duplicate()
+#				print("Indirect: ", peice_x, peice_y, checkList)
+				indirectCheckMoveDict[Vector2(peice_x, peice_y)] = checkList.duplicate()
 				checkList.clear()
+				checkCount += 1
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
+	return false
 
-func indirectCrossCheck(start, end, queen, rook, kingCell):
+func indirectCrossCheck(start, end, queen, rook, kingCell, checkKing = false):
 	#up
 	var temp_coord = kingCell.y
 	var peice_coord
@@ -354,9 +482,14 @@ func indirectCrossCheck(start, end, queen, rook, kingCell):
 			count += 1
 		elif (temp == queen || temp == rook):
 			if (count == 0):
+				if (checkKing):
+					return true
 				upCheck(temp_coord, kingCell.x, space)
 				inCheck = true
-			else:
+				checkCount += 1
+			elif (!checkKing):
+				if (indirectCheckMoveDict.has(Vector2(kingCell.x, kingCell.y))):
+					checkList = indirectCheckMoveDict.get(Vector2(kingCell.x, kingCell.y))
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				checkList.append(Vector2(kingCell.x, temp_coord))
@@ -369,12 +502,16 @@ func indirectCrossCheck(start, end, queen, rook, kingCell):
 					space -= 1
 					temp = get_cell(kingCell.x, temp_coord)
 				peice_coord = temp_coord
+				temp_coord += 1
+				space -= 1
 				while (space > 0):
 					checkList.append(Vector2(kingCell.x, temp_coord))
 					temp_coord += 1
 					space -= 1
-				checkMoveDict[Vector2(kingCell.x, peice_coord)] = checkList.duplicate()
+#				print("Indirect: ", kingCell.x, temp_coord, checkList)
+				indirectCheckMoveDict[Vector2(kingCell.x, peice_coord)] = checkList.duplicate()
 				checkList.clear()
+				checkCount += 1
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
@@ -394,9 +531,14 @@ func indirectCrossCheck(start, end, queen, rook, kingCell):
 			count += 1
 		elif (temp == queen || temp == rook):
 			if (count == 0):
+				if (checkKing):
+					return true
 				downCheck(temp_coord, kingCell.x, space)
 				inCheck = true
-			else:
+				checkCount += 1
+			elif (!checkKing):
+				if (indirectCheckMoveDict.has(Vector2(kingCell.x, kingCell.y))):
+					checkList = indirectCheckMoveDict.get(Vector2(kingCell.x, kingCell.y))
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				checkList.append(Vector2(kingCell.x, temp_coord))
@@ -409,12 +551,16 @@ func indirectCrossCheck(start, end, queen, rook, kingCell):
 					space -= 1
 					temp = get_cell(kingCell.x, temp_coord)
 				peice_coord = temp_coord
+				temp_coord -= 1
+				space -= 1
 				while (space > 0):
 					checkList.append(Vector2(kingCell.x, temp_coord))
 					temp_coord -= 1
 					space -= 1
-				checkMoveDict[Vector2(kingCell.x, peice_coord)] = checkList.duplicate()
+#				print("Indirect: ", kingCell.x, temp_coord, checkList)
+				indirectCheckMoveDict[Vector2(kingCell.x, peice_coord)] = checkList.duplicate()
 				checkList.clear()
+				checkCount += 1
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
@@ -434,9 +580,14 @@ func indirectCrossCheck(start, end, queen, rook, kingCell):
 			count += 1
 		elif (temp == queen || temp == rook):
 			if (count == 0):
+				if (checkKing):
+					return true
 				rightCheck(temp_coord, kingCell.y, space)
 				inCheck = true
-			else:
+				checkCount += 1
+			elif (!checkKing):
+				if (indirectCheckMoveDict.has(Vector2(kingCell.x, kingCell.y))):
+					checkList = indirectCheckMoveDict.get(Vector2(kingCell.x, kingCell.y))
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				checkList.append(Vector2(temp_coord, kingCell.y))
@@ -449,12 +600,16 @@ func indirectCrossCheck(start, end, queen, rook, kingCell):
 					space -= 1
 					temp = get_cell(temp_coord, kingCell.y)
 				peice_coord = temp_coord
+				temp_coord -= 1
+				space -= 1
 				while (space > 0):
 					checkList.append(Vector2(temp_coord, kingCell.y))
 					temp_coord -= 1
 					space -= 1
-				checkMoveDict[Vector2(peice_coord, kingCell.y)] = checkList.duplicate()
+#				print("Indirect: ", temp_coord, kingCell.y, checkList)
+				indirectCheckMoveDict[Vector2(peice_coord, kingCell.y)] = checkList.duplicate()
 				checkList.clear()
+				checkCount += 1
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
@@ -474,9 +629,14 @@ func indirectCrossCheck(start, end, queen, rook, kingCell):
 			count += 1
 		elif (temp == queen || temp == rook):
 			if (count == 0):
+				if (checkKing):
+					return true
 				leftCheck(temp_coord, kingCell.y, space)
 				inCheck = true
-			else:
+				checkCount += 1
+			elif (!checkKing):
+				if (indirectCheckMoveDict.has(Vector2(kingCell.x, kingCell.y))):
+					checkList = indirectCheckMoveDict.get(Vector2(kingCell.x, kingCell.y))
 				# count == 1 -> one piece between king and opponent
 				# piece cannot move off slope (only move upper left)
 				checkList.append(Vector2(temp_coord, kingCell.y))
@@ -489,15 +649,20 @@ func indirectCrossCheck(start, end, queen, rook, kingCell):
 					space -= 1
 					temp = get_cell(temp_coord, kingCell.y)
 				peice_coord = temp_coord
+				temp_coord += 1
+				space -= 1
 				while (space > 0):
 					checkList.append(Vector2(temp_coord, kingCell.y))
 					temp_coord += 1
 					space -= 1
-				checkMoveDict[Vector2(peice_coord, kingCell.y)] = checkList.duplicate()
+#				print("Indirect: ", temp_coord, kingCell.y, checkList)
+				indirectCheckMoveDict[Vector2(peice_coord, kingCell.y)] = checkList.duplicate()
 				checkList.clear()
+				checkCount += 1
 		if (count == 2):
 			#two pieces protecting king we dont care about the rest
 			break
+	return false
 
 func upperLeftCheck(temp_x, temp_y, space):
 	while (space > 0):
@@ -628,127 +793,214 @@ func knightMove(start, end, check = false):
 	
 func rookMove(start, end, check = false):
 	#rook is selected display cells where they can move
-	cross(start, end, check)
+	var temp
+	up(start, end, check)
+	down(start, end, check)
+	left(start, end, check)
+	right(start, end, check)
+	if (check):
+		temp = indirectCheckMoveDict.get(Vector2(x_coord, y_coord))
+#		if (temp != null):
+#			checkMoveDict[Vector2(x_coord, y_coord)] = temp
 	
 func bishopMove(start, end, check = false):
 	#bishop is selected display cells where they can move
-	diagonal(start, end, check)
+	var temp
+	upperLeft(start, end, check)
+	upperRight(start, end, check)
+	lowerLeft(start, end, check)
+	lowerRight(start, end, check)
+	if (check):
+		temp = indirectCheckMoveDict.get(Vector2(x_coord, y_coord))
+#		if (temp != null):
+#			checkMoveDict[Vector2(x_coord, y_coord)] = temp
 	
-func kingMove(start, end, check = false):
+func kingMove(start, end, kingCell, knight, pawn, pawnDir, queen, bishop, rook):
 	#king is selected display cells where they can move
 	# TODO not when king will put himself in check
 	#remember weird move with rook (castling)
+	var temp
 	#up/down
-	moveArray.append(Vector2(x_coord, y_coord + 1))
-	moveArray.append(Vector2(x_coord, y_coord - 1))
+	moveArray.append(Vector2(kingCell.x, kingCell.y + 1))
+	moveArray.append(Vector2(kingCell.x, kingCell.y - 1))
 	#left/right
-	moveArray.append(Vector2(x_coord + 1, y_coord))
-	moveArray.append(Vector2(x_coord- 1, y_coord))
+	moveArray.append(Vector2(kingCell.x + 1, kingCell.y))
+	moveArray.append(Vector2(kingCell.x - 1, kingCell.y))
 	# diagonals
-	moveArray.append(Vector2(x_coord + 1, y_coord - 1))
-	moveArray.append(Vector2(x_coord- 1, y_coord - 1))
-	moveArray.append(Vector2(x_coord + 1, y_coord + 1))
-	moveArray.append(Vector2(x_coord- 1, y_coord + 1))
-	if (!check):
-		showMoves(start, end, true)
+	moveArray.append(Vector2(kingCell.x + 1, kingCell.y - 1))
+	moveArray.append(Vector2(kingCell.x - 1, kingCell.y - 1))
+	moveArray.append(Vector2(kingCell.x + 1, kingCell.y + 1))
+	moveArray.append(Vector2(kingCell.x - 1, kingCell.y + 1))
+	for i in moveArray.duplicate():
+		temp = get_cellv(i)
+		if (temp != -1 || (temp > start && temp < end)):
+			moveArray.erase(i)
+	for i in moveArray.duplicate():
+		if (checkKingMove(start, end, i, knight, pawn, pawnDir, queen, bishop, rook)):
+			moveArray.erase(i)
+
+	checkMoveDict[kingCell] = moveArray.duplicate()
+	moveArray.clear()
+		
+func checkKingMove(start, end, kingCell, knight, pawn, pawnDir, queen, bishop, rook):
+	#knight:
+	var temp_x = kingCell.x - 1
+	var temp_y = kingCell.y + 2
+	#-1, +2
+	if (get_cell(temp_x, temp_y) == knight):
+		return true
+	temp_y -= 4
+	#-1, -2
+	if (get_cell(temp_x, temp_y) == knight):
+		return true
+	#+1, -2
+	temp_x += 2
+	if (get_cell(temp_x, temp_y) == knight):
+		return true
+	#+1, +2
+	temp_y += 4
+	if (get_cell(temp_x, temp_y) == knight):
+		return true
+	#+2, +1
+	temp_x += 1
+	temp_y -= 1
+	if (get_cell(temp_x, temp_y) == knight):
+		return true
+	temp_y -= 2
+	#+2, -1
+	if (get_cell(temp_x, temp_y) == knight):
+		return true
+	temp_x -= 4
+	#-2, -1
+	if (get_cell(temp_x, temp_y) == knight):
+		return true
+	temp_y += 2
+	#-2, +1
+	if (get_cell(temp_x, temp_y) == knight):
+		return true
+	#pawn:
+	if (get_cell(kingCell.x + 1, kingCell.y + pawnDir) == pawn):
+		return true
+	if (get_cell(kingCell.x - 1, kingCell.y + pawnDir) == pawn):
+		return true
+		
+	if (indirectDiagonalCheck(start, end, queen, bishop, kingCell, true)):
+		return true
 	else:
-		evaluateMoves(true)
+		return indirectCrossCheck(start, end, queen, rook, kingCell, true)
 	
 func queenMove(start, end, check = false):
 	#queen is selected display cells where they can move
-	diagonal(start, end, check)
-	cross(start, end, check)
-	
-func diagonal(start, end, check = false):
+	var temp 
+	upperLeft(start, end, check)
+	upperRight(start, end, check)
+	lowerLeft(start, end, check)
+	lowerRight(start, end, check)
+	up(start, end, check)
+	down(start, end, check)
+	left(start, end, check)
+	right(start, end, check)
+	if (check):
+		temp = indirectCheckMoveDict.get(Vector2(x_coord, y_coord))
+#		if (temp != null):
+#			checkMoveDict[Vector2(x_coord, y_coord)] = temp
+		
+func upperLeft(start, end, check = false):
 	#upper left diagonal
 	var temp_x = x_coord
 	var temp_y = y_coord
-	while (temp_x > 0 && temp_y > 0):
+	while (temp_x > 1 && temp_y > 1):
 		temp_x -= 1
 		temp_y -= 1
 		moveArray.append(Vector2(temp_x, temp_y))
-	if (!check):
-		showMoves(start, end)
-	else:
+	if (check):
 		evaluateMoves()
-	
+	else:
+		showMoves(start, end)
+
+func upperRight(start, end, check = false):
 	# upper right diagonal
-	temp_x = x_coord
-	temp_y = y_coord
-	while (temp_x < 9 && temp_y > 0):
+	var temp_x = x_coord
+	var temp_y = y_coord
+	while (temp_x < 8 && temp_y > 1):
 		temp_x += 1
 		temp_y -= 1
 		moveArray.append(Vector2(temp_x, temp_y))
-	if (!check):
-		showMoves(start, end)
-	else:
+	if (check):
 		evaluateMoves()
+	else:
+		showMoves(start, end)
 	
+func lowerLeft(start, end, check = false):
 	# lower left diagonal
-	temp_x = x_coord
-	temp_y = y_coord
-	while (temp_x > 0 && temp_y < 9):
+	var temp_x = x_coord
+	var temp_y = y_coord
+	while (temp_x > 1 && temp_y < 8):
 		temp_x -= 1
 		temp_y += 1
 		moveArray.append(Vector2(temp_x, temp_y))
-	if (!check):
-		showMoves(start, end)
-	else:
+	if (check):
 		evaluateMoves()
+	else:
+		showMoves(start, end)
 		
+func lowerRight(start, end, check = false):
 	# lower right diagonal
-	temp_x = x_coord
-	temp_y = y_coord
-	while (temp_x < 9 && temp_y < 9):
+	var temp_x = x_coord
+	var temp_y = y_coord
+	while (temp_x < 8 && temp_y < 8):
 		temp_x += 1
 		temp_y += 1
 		moveArray.append(Vector2(temp_x, temp_y))
-	if (!check):
-		showMoves(start, end)
-	else:
+	if (check):
 		evaluateMoves()
+	else:
+		showMoves(start, end)
 		
-func cross(start, end, check = false):
+func up(start, end, check = false):
 	#up
 	var temp = y_coord
-	while (temp > 0):
+	while (temp > 1):
 		temp -= 1
 		moveArray.append(Vector2(x_coord, temp))
-	if (!check):
-		showMoves(start, end)
-	else:
+	if (check):
 		evaluateMoves()
+	else:
+		showMoves(start, end)
 		
+func down(start, end, check = false):
 #	#down
-	temp = y_coord
-	while (temp < 9):
+	var temp = y_coord
+	while (temp < 8):
 		temp += 1
 		moveArray.append(Vector2(x_coord, temp))
-	if (!check):
-		showMoves(start, end)
-	else:
+	if (check):
 		evaluateMoves()
-	
+	else:
+		showMoves(start, end)
+
+func left(start, end, check = false):
 #	#left
-	temp = x_coord
-	while (temp > 0):
+	var temp = x_coord
+	while (temp > 1):
 		temp -= 1
 		moveArray.append(Vector2(temp, y_coord))
-	if (!check):
-		showMoves(start, end)
-	else:
+	if (check):
 		evaluateMoves()
-		
+	else:
+		showMoves(start, end)
+
+func right(start, end, check = false):
 #	#right
-	temp = x_coord
-	while (temp < 9):
+	var temp = x_coord
+	while (temp < 8):
 		temp += 1
 		moveArray.append(Vector2(temp, y_coord))
-	if (!check):
-		showMoves(start, end)
-	else:
+	if (check):
 		evaluateMoves()
-		
+	else:
+		showMoves(start, end)
+
 func makeMove():
 	# on mouse release if clicked on possible move 
 	# set previous cell to empty and new cell to cellID
@@ -773,7 +1025,10 @@ func makeMove():
 		inCheck = false
 		checked = false
 		checkList.clear()
+		finalCheckList.clear()
 		checkMoveDict.clear()
+		indirectCheckMoveDict.clear()
+		checkCount = 0
 
 func hover():
 	# we could probably rework it so selected highlight is on move instead i think it would be easier code to follow
@@ -805,7 +1060,18 @@ func select(start, end):
 					# only display possible moves for cells in checkMoveDict
 					var tempCell
 					for i in checkMoveDict[cell]:
-						if (i in finalCheckList):
+#						if (i in finalCheckList):
+						if cell in indirectCheckMoveDict:
+							for j in indirectCheckMoveDict[cell]:
+								if j in finalCheckList:
+									tempCell = get_cellv(i)
+									if (tempCell == -1):
+										# move is putting piece between king and opponent
+										moveTileMap.set_cellv(j, 2)
+									else:
+										# move is killing opponents piece
+										moveTileMap.set_cellv(j, 1)
+						else:
 							tempCell = get_cellv(i)
 							if (tempCell == -1):
 								# move is putting piece between king and opponent
@@ -818,14 +1084,13 @@ func select(start, end):
 					# only display possible moves for cells in checkMoveDict
 					var tempCell
 					for i in checkMoveDict[cell]:
-						if (i in finalCheckList):
-							tempCell = get_cellv(i)
-							if (tempCell == -1):
-								# move is putting piece between king and opponent
-								moveTileMap.set_cellv(i, 2)
-							else:
-								# move is killing opponents piece
-								moveTileMap.set_cellv(i, 1)
+						tempCell = get_cellv(i)
+						if (tempCell == -1):
+							# move is putting piece between king and opponent
+							moveTileMap.set_cellv(i, 2)
+						else:
+							# move is killing opponents piece
+							moveTileMap.set_cellv(i, 1)
 				else:
 					match cellID:
 						1:
@@ -834,12 +1099,12 @@ func select(start, end):
 						7:
 							#white bishop
 							bishopMove(0, 7)
-						2:
-							#black king
-							kingMove(6, 13)
-						8:
-							#white king
-							kingMove(0, 7)
+#						2:
+#							#black king
+#							kingMove(6, 13)
+#						8:
+#							#white king
+#							kingMove(0, 7)
 						3:
 							#black knight
 							knightMove(6, 13)
