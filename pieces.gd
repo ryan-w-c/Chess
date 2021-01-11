@@ -24,6 +24,7 @@ var finalCheckList = []
 var checkMoveDict = {}
 var indirectCheckMoveDict = {}
 var pawn_coord # used for pawn promotion and en passant
+var pawnCount #needed for en passant
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -53,7 +54,6 @@ func _process(delta):
 			indirectCrossCheck(0, 7, 11, 12, blackKingCell)
 			if (!indirectCheckMoveDict.empty() || inCheck):
 				findMoves(0, 7)
-	# TODO if piece is highlighted from check make it non hoverable and non selectable
 	if (!disableSelect):
 		hover()
 		if (Input.is_action_just_released("on_left_click")):
@@ -713,8 +713,9 @@ func pawnMove(start, end, pawnDir, row, check = false):
 	# pawn is selected display cells where they can move
 	# TODO en passant special move
 	var tempCell
-	# pawns in start position
+
 	if (check):
+		# pawns in start position
 		if (y_coord == row):
 			if (get_cell(x_coord, y_coord + pawnDir) == -1):
 				moveArray.append(Vector2(x_coord, y_coord + pawnDir))
@@ -732,6 +733,7 @@ func pawnMove(start, end, pawnDir, row, check = false):
 			moveArray.append(Vector2(x_coord + 1, y_coord + pawnDir))
 		evaluateMoves()
 	else:
+		# pawns in start position
 		if (y_coord == row):
 			if (get_cell(x_coord, y_coord + pawnDir) == -1):
 				moveTileMap.set_cell(x_coord, y_coord + pawnDir, 2)
@@ -747,6 +749,9 @@ func pawnMove(start, end, pawnDir, row, check = false):
 		tempCell = get_cell(x_coord + 1, y_coord + pawnDir)
 		if (tempCell > start && tempCell < end):
 			moveTileMap.set_cell(x_coord + 1, y_coord + pawnDir, 1)
+		if (pawn_coord != null):
+			if (y_coord == pawn_coord.y && (x_coord == pawn_coord.x - 1 || x_coord == pawn_coord.x + 1)):
+				moveTileMap.set_cell(pawn_coord.x, pawn_coord.y + pawnDir, 1)
 	
 func pawnPromotion(knight, bishop, rook, queen):
 	#pawn made it to the other end can turn into queen, bishop, rook, or knight
@@ -1034,20 +1039,36 @@ func makeMove():
 			whiteKingCell = cell
 		elif (temp == 4):
 			#black pawn
-			if (cell.y == 8):
+			if (cell.y == 4 && selectedCell.y == 2):
+				#en passant
+				pawn_coord = cell
+				pawnCount = 1
+			elif (cell.y == 8):
+				#promotion
 				disableSelect = true
 				pawn_coord = cell
 				yield(pawnPromotion(3, 1, 6, 5), "completed")
 				resetTurn()
 				return
+			elif (pawn_coord != null):
+				if (cell.y == pawn_coord.y + 1 && cell.x == pawn_coord.x):
+					set_cellv(pawn_coord, - 1)
 		elif (temp == 10):
 			#white pawn
-			if (cell.y == 1):
+			if (cell.y == 5 && selectedCell.y == 7):
+				#en passant
+				pawn_coord = cell
+				pawnCount = 1
+			elif (cell.y == 1):
+				#promotion
 				disableSelect = true
 				pawn_coord = cell
 				yield(pawnPromotion(6, 7, 12, 11), "completed")
 				resetTurn()
 				return
+			elif (pawn_coord != null):
+				if (cell.y == pawn_coord.y - 1 && cell.x == pawn_coord.x):
+					set_cellv(pawn_coord, - 1)
 		setMove(cell, temp, selectedCell)
 		resetTurn()
 		
@@ -1063,6 +1084,10 @@ func resetTurn():
 		whiteTurn = false
 	else:
 		whiteTurn = true
+	if pawnCount > 0:
+		pawnCount -= 1
+	else:
+		pawn_coord = null
 	inCheck = false
 	checked = false
 	checkList.clear()
