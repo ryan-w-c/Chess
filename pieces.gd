@@ -1,10 +1,13 @@
 extends TileMap
 
+
 onready var highlightTileMap = get_parent().get_node("highlight")
 onready var moveTileMap = get_parent().get_node("move")
 var whiteTurn : bool = true
 var inCheck : bool = false
 var checked : bool = false #if we have checked for a check
+var pawnBool : bool = false
+var disableSelect : bool = false
 var checkCount = 0
 var last
 var cell
@@ -20,6 +23,7 @@ var checkList = []
 var finalCheckList = []
 var checkMoveDict = {}
 var indirectCheckMoveDict = {}
+var pawn_coord # used for pawn promotion and en passant
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -27,6 +31,8 @@ func _ready():
 	emptyCell = world_to_map(get_global_mouse_position().snapped(Vector2(0, 0)))
 	last = emptyCell
 	selectedCell = emptyCell
+	for button in get_tree().get_nodes_in_group("pp"):
+		button.connect("pressed", self, "_pp_pressed", [button])
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
@@ -47,17 +53,18 @@ func _process(delta):
 			indirectCrossCheck(0, 7, 11, 12, blackKingCell)
 			if (!indirectCheckMoveDict.empty() || inCheck):
 				findMoves(0, 7)
-		print(checkMoveDict)
-		print(inCheck)
-		print(indirectCheckMoveDict)
-		print(finalCheckList)
+#		print(checkMoveDict)
+#		print(inCheck)
+#		print(indirectCheckMoveDict)
+#		print(finalCheckList)
 	# TODO if piece is highlighted from check make it non hoverable and non selectable
-	hover()
-	if (Input.is_action_just_released("on_left_click")):
-		if (whiteTurn):
-			select(6, 13)
-		else:
-			select(0, 7)
+	if (!disableSelect):
+		hover()
+		if (Input.is_action_just_released("on_left_click")):
+			if (whiteTurn):
+				select(6, 13)
+			else:
+				select(0, 7)
 		
 func pawnKnightCheck(kingCell, knight, pawn, pawnDir):
 	# puts cells into finalCheckList if pawn or knigh is checking king
@@ -772,9 +779,62 @@ func pawnMove(start, end, pawnDir, row, check = false):
 		if (tempCell > start && tempCell < end):
 			moveTileMap.set_cell(x_coord + 1, y_coord + pawnDir, 1)
 	
-func pawnPromotion():
+func pawnPromotion(knight, bishop, rook, queen):
 	#pawn made it to the other end can turn into queen, bishop, rook, or knight
-	pass
+	var temp = get_parent().get_node("ppPopup/HBoxContainer/0/bishopImg")
+	if (bishop == 1):
+		temp.texture = load("res://img/BB.png")
+	else:
+		temp.texture = load("res://img/WB.png")
+	
+	temp = get_parent().get_node("ppPopup/HBoxContainer/1/knightImg")
+	if (knight == 3):
+		temp.texture = load("res://img/BKT.png")
+	else:
+		temp.texture = load("res://img/WKT.png")
+		
+	temp = get_parent().get_node("ppPopup/HBoxContainer/3/queenImg")
+	if (queen == 5):
+		temp.texture = load("res://img/BQ.png")
+	else:
+		temp.texture = load("res://img/WQ.png")
+		
+	temp = get_parent().get_node("ppPopup/HBoxContainer/2/rookImg")
+	if (rook == 6):
+		temp.texture = load("res://img/BR.png")
+	else:
+		temp.texture = load("res://img/WR.png")
+		
+	var pop = get_parent().get_node("ppPopup")
+	pop.visible = true
+	
+	yield(get_parent().get_node("ppPopup/HBoxContainer/0"), "pressed")
+	pop.hide()
+	print(temp)
+
+
+
+func _pp_pressed(button):
+	if (pawnBool):
+		return
+	var diff = 0
+	if (whiteTurn):
+		diff = 6
+	match int(button.name):
+		0:
+			#bishop
+			setMove(pawn_coord, 1 + diff, selectedCell)
+		1:
+			#knight
+			setMove(pawn_coord, 3 + diff, selectedCell)
+		2:
+			#rook
+			setMove(pawn_coord, 6 + diff, selectedCell)
+		3:
+			#queen
+			setMove(pawn_coord, 5 + diff, selectedCell)
+	pawnBool = true
+	get_parent().get_node("ppPopup/HBoxContainer/0").emit_signal("pressed")
 
 func knightMove(start, end, check = false):
 	#knight is selected display cells where they can move
@@ -1012,22 +1072,46 @@ func makeMove():
 		elif (temp == 8):
 			# white King
 			whiteKingCell = cell
-		set_cellv(cell, temp)
-		set_cellv(selectedCell, -1)
-		highlightTileMap.set_cellv(selectedCell, -1)
-		selectedCell = emptyCell
-		moveTileMap.clear()
-		if (whiteTurn):
-			whiteTurn = false
-		else:
-			whiteTurn = true
-		inCheck = false
-		checked = false
-		checkList.clear()
-		finalCheckList.clear()
-		checkMoveDict.clear()
-		indirectCheckMoveDict.clear()
-		checkCount = 0
+		elif (temp == 4):
+			#black pawn
+			if (cell.y == 8):
+				disableSelect = true
+				pawn_coord = cell
+				yield(pawnPromotion(3, 1, 6, 5), "completed")
+				resetTurn()
+				return
+		elif (temp == 10):
+			#white pawn
+			if (cell.y == 1):
+				disableSelect = true
+				pawn_coord = cell
+				yield(pawnPromotion(6, 7, 12, 11), "completed")
+				resetTurn()
+				return
+		setMove(cell, temp, selectedCell)
+		resetTurn()
+		
+func setMove(cell_one, id_one, cell_two, id_two = -1):
+	set_cellv(cell_one, id_one)
+	set_cellv(cell_two, id_two)
+
+func resetTurn():
+	highlightTileMap.set_cellv(selectedCell, -1)
+	selectedCell = emptyCell
+	moveTileMap.clear()
+	if (whiteTurn):
+		whiteTurn = false
+	else:
+		whiteTurn = true
+	inCheck = false
+	checked = false
+	checkList.clear()
+	finalCheckList.clear()
+	checkMoveDict.clear()
+	indirectCheckMoveDict.clear()
+	checkCount = 0
+	pawnBool = false
+	disableSelect = false
 
 func hover():
 	# we could probably rework it so selected highlight is on move instead i think it would be easier code to follow
@@ -1133,3 +1217,4 @@ func select(start, end):
 			selectedCell = emptyCell
 	else:
 		makeMove()
+		
