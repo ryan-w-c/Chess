@@ -8,6 +8,12 @@ var inCheck : bool = false
 var checked : bool = false #if we have checked for a check
 var pawnBool : bool = false
 var disableSelect : bool = false
+var whiteKingMoved : bool = false
+var whiteKingRookMoved : bool = false
+var whiteQueenRookMoved : bool = false
+var blackKingMoved : bool = false
+var blackKingRookMoved : bool = false
+var blackQueenRookMoved : bool = false
 var checkCount = 0
 var last
 var cell
@@ -24,7 +30,7 @@ var finalCheckList = []
 var checkMoveDict = {}
 var indirectCheckMoveDict = {}
 var pawn_coord # used for pawn promotion and en passant
-var pawnCount #needed for en passant
+var pawnCount = 0 #needed for en passant
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -45,15 +51,34 @@ func _process(delta):
 			pawnKnightCheck(whiteKingCell, 3, 4, -1)
 			indirectDiagonalCheck(6, 13, 5, 1, whiteKingCell)
 			indirectCrossCheck(6, 13, 5, 6, whiteKingCell)
+			if !inCheck:
+				castle(6, 13, whiteKingCell, 3, 4, -1, 5, 1, 6, whiteKingMoved, whiteKingRookMoved, whiteQueenRookMoved)
 			if (!indirectCheckMoveDict.empty() || inCheck):
 				findMoves(6, 13)
+			if (inCheck && checkMoveDict.size() - 1 < checkCount && checkMoveDict.get(whiteKingCell).empty()):
+				#TODO game over screen
+				#checkmate
+				print("checkmate")
+			elif (checkMoveDict.size() < checkCount && checkMoveDict.get(whiteKingCell).empty()):
+				#Todo game over screen
+				#stalemate
+				print("Stalemate")
 		else:
 			kingMove(0, 7, blackKingCell, 9, 10, 1, 11, 7, 12)
 			pawnKnightCheck(blackKingCell, 9, 10, 1)
 			indirectDiagonalCheck(0, 7, 11, 7, blackKingCell)
 			indirectCrossCheck(0, 7, 11, 12, blackKingCell)
+			castle(0, 7, blackKingCell, 9, 10, 1, 11, 7, 12, blackKingMoved, blackKingRookMoved, blackQueenRookMoved)
 			if (!indirectCheckMoveDict.empty() || inCheck):
 				findMoves(0, 7)
+			if (inCheck && checkMoveDict.size() - 1 < checkCount && checkMoveDict.get(blackKingCell).empty()):
+				#TODO game over screen
+				#checkmate
+				print("checkmate")
+			elif (checkMoveDict.size() < checkCount && checkMoveDict.get(blackKingCell).empty()):
+				#Todo game over screen
+				#stalemate
+				print("Stalemate")
 	if (!disableSelect):
 		hover()
 		if (Input.is_action_just_released("on_left_click")):
@@ -845,7 +870,6 @@ func bishopMove(start, end, check = false):
 	
 func kingMove(start, end, kingCell, knight, pawn, pawnDir, queen, bishop, rook):
 	#king is selected display cells where they can move
-	#TODO special move with rook (castling)
 	var temp
 	#up/down
 	moveArray.append(Vector2(kingCell.x, kingCell.y + 1))
@@ -868,6 +892,27 @@ func kingMove(start, end, kingCell, knight, pawn, pawnDir, queen, bishop, rook):
 	checkMoveDict[kingCell] = moveArray.duplicate()
 	moveArray.clear()
 		
+func castle(start, end, kingCell, knight, pawn, pawnDir, queen, bishop, rook, kingMoved, kingRook, queenRook):
+	#castling rules: https://youtu.be/FcLYgXCkucc?list=PL-qLOQ-OEls79TrVo14c9pN0sWwvli6rP
+	# no peice between rook and king
+	# castling can occur on king side and queen side
+	# castling cannot occur if king is in check
+	# castling cannot occur if king or rook has made a move
+	# castling cannot occur if king will pass space that would be in check
+	# castling cannot occur if king will be in check after move
+	var tempList = checkMoveDict.get(kingCell)
+	if !kingMoved:
+		if !queenRook:
+			if Vector2(kingCell.x - 1, kingCell.y) in tempList:
+				if (get_cell(kingCell.x - 2, kingCell.y) == -1 && get_cell(kingCell.x - 3, kingCell.y) == -1):
+					if !(checkKingMove(start, end, Vector2(kingCell.x - 2, kingCell.y), knight, pawn, pawnDir, queen, bishop, rook)):
+						tempList.append(Vector2(kingCell.x - 2, kingCell.y))
+		if !kingRook:
+			if Vector2(kingCell.x + 1, kingCell.y) in tempList:
+				if (get_cell(kingCell.x + 2, kingCell.y) == -1):
+					if !(checkKingMove(start, end, Vector2(kingCell.x + 2, kingCell.y), knight, pawn, pawnDir, queen, bishop, rook)):
+						tempList.append(Vector2(kingCell.x + 2, kingCell.y))
+
 func checkKingMove(start, end, kingCell, knight, pawn, pawnDir, queen, bishop, rook):
 	#knight:
 	var temp_x = kingCell.x - 1
@@ -1033,9 +1078,23 @@ func makeMove():
 	if (moveTileMap.get_cellv(cell) > 0):
 		if (temp == 2):
 			#black king
+			# for castling
+			if (!blackKingMoved):
+				if blackKingCell.x - cell.x > 1:
+					setMove(Vector2(cell.x + 1, cell.y), 6, Vector2(cell.x - 2, cell.y))
+				elif blackKingCell.x - cell.x < -1:
+					setMove(Vector2(cell.x - 1, cell.y), 6, Vector2(cell.x + 1, cell.y))
+			blackKingMoved = true
 			blackKingCell = cell
 		elif (temp == 8):
 			# white King
+			# for castling
+			if (!whiteKingMoved):
+				if whiteKingCell.x - cell.x > 1:
+					setMove(Vector2(cell.x + 1, cell.y), 12, Vector2(cell.x - 2, cell.y))
+				elif whiteKingCell.x - cell.x < -1:
+					setMove(Vector2(cell.x - 1, cell.y), 12, Vector2(cell.x + 1, cell.y))
+			whiteKingMoved = true
 			whiteKingCell = cell
 		elif (temp == 4):
 			#black pawn
@@ -1069,6 +1128,14 @@ func makeMove():
 			elif (pawn_coord != null):
 				if (cell.y == pawn_coord.y - 1 && cell.x == pawn_coord.x):
 					set_cellv(pawn_coord, - 1)
+		elif (cell.x == 8 && cell.y == 8 || selectedCell.x == 8 && selectedCell.y == 8):
+			whiteKingRookMoved = true
+		elif (cell.x == 1 && cell.y == 1 || selectedCell.x == 1 && selectedCell.y == 1):
+			blackQueenRookMoved = true
+		elif (cell.x == 8 && cell.y == 1 || selectedCell.x == 8 && selectedCell.y == 1):
+			blackKingRookMoved = true
+		elif (cell.x == 1 && cell.y == 8 || selectedCell.x == 1 && selectedCell.y == 8):
+			whiteQueenRookMoved = true
 		setMove(cell, temp, selectedCell)
 		resetTurn()
 		
