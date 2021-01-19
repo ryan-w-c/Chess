@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=2]
+[gd_scene load_steps=48 format=2]
 
 [ext_resource path="res://img/gray.png" type="Texture" id=1]
 [ext_resource path="res://img/BP.png" type="Texture" id=2]
@@ -27,6 +27,20 @@
 [ext_resource path="res://img/pawnPromotion.png" type="Texture" id=25]
 [ext_resource path="res://font/Amiko/Amiko.tres" type="DynamicFont" id=26]
 [ext_resource path="res://font/Lalezar/Lalezar.tres" type="DynamicFont" id=27]
+[ext_resource path="res://img/options.png" type="Texture" id=28]
+[ext_resource path="res://img/blueBtn.png" type="Texture" id=29]
+[ext_resource path="res://img/lightBlueBtn.png" type="Texture" id=30]
+[ext_resource path="res://font/Amiko/AmikoBig.tres" type="DynamicFont" id=31]
+[ext_resource path="res://img/greenBtn.png" type="Texture" id=32]
+[ext_resource path="res://font/Lalezar/LalezarBig.tres" type="DynamicFont" id=33]
+[ext_resource path="res://img/gearWhite.png" type="Texture" id=34]
+[ext_resource path="res://img/gearWhiteHover.png" type="Texture" id=35]
+[ext_resource path="res://img/gearBlackHover.png" type="Texture" id=36]
+[ext_resource path="res://img/gearBlack.png" type="Texture" id=37]
+[ext_resource path="res://img/smallLightBlueBtn.png" type="Texture" id=38]
+[ext_resource path="res://img/smallBlueBtn.png" type="Texture" id=39]
+[ext_resource path="res://img/smallGreenBtn.png" type="Texture" id=40]
+[ext_resource path="res://img/menu.png" type="Texture" id=41]
 
 [sub_resource type="TileSet" id=1]
 5/name = "blue.png 5"
@@ -376,7 +390,11 @@
 shader = ExtResource( 23 )
 shader_param/amount = 1.775
 
-[node name="Node2D" type="Node2D"]
+[sub_resource type="ShaderMaterial" id=6]
+shader = ExtResource( 23 )
+shader_param/amount = 1.775
+
+[node name="Chess" type="Node2D"]
 
 [node name="board" type="TileMap" parent="."]
 tile_set = SubResource( 1 )
@@ -400,6 +418,27 @@ cell_size = Vector2( 128, 128 )
 format = 1
 tile_data = PoolIntArray( 0, 13, 0, 1, 13, 0, 2, 13, 0, 3, 13, 0, 4, 13, 0, 5, 13, 0, 6, 13, 0, 7, 13, 0, 8, 13, 0, 9, 13, 0, 65536, 13, 0, 65537, 6, 0, 65538, 3, 0, 65539, 1, 0, 65540, 5, 0, 65541, 2, 0, 65542, 1, 0, 65543, 3, 0, 65544, 6, 0, 65545, 13, 0, 131072, 13, 0, 131073, 4, 0, 131074, 4, 0, 131075, 4, 0, 131076, 4, 0, 131077, 4, 0, 131078, 4, 0, 131079, 4, 0, 131080, 4, 0, 131081, 13, 0, 196608, 13, 0, 196617, 13, 0, 262144, 13, 0, 262153, 13, 0, 327680, 13, 0, 327689, 13, 0, 393216, 13, 0, 393225, 13, 0, 458752, 13, 0, 458753, 10, 0, 458754, 10, 0, 458755, 10, 0, 458756, 10, 0, 458757, 10, 0, 458758, 10, 0, 458759, 10, 0, 458760, 10, 0, 458761, 13, 0, 524288, 13, 0, 524289, 12, 0, 524290, 9, 0, 524291, 7, 0, 524292, 11, 0, 524293, 8, 0, 524294, 7, 0, 524295, 9, 0, 524296, 12, 0, 524297, 13, 0, 589824, 13, 0, 589825, 13, 0, 589826, 13, 0, 589827, 13, 0, 589828, 13, 0, 589829, 13, 0, 589830, 13, 0, 589831, 13, 0, 589832, 13, 0, 589833, 13, 0 )
 script = ExtResource( 8 )
+
+[node name="blackOptionBtn" type="TextureButton" parent="."]
+visible = false
+margin_left = 1152.0
+margin_right = 1280.0
+margin_bottom = 128.0
+texture_normal = ExtResource( 37 )
+texture_hover = ExtResource( 36 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="whiteOptionBtn" type="TextureButton" parent="."]
+margin_left = 1152.0
+margin_right = 1280.0
+margin_bottom = 128.0
+texture_normal = ExtResource( 34 )
+texture_hover = ExtResource( 35 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
 [node name="ppPopup" type="Control" parent="."]
 visible = false
@@ -427,7 +466,7 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ppTitleLable" type="Label" parent="ppPopup"]
+[node name="ppTitleLabel" type="Label" parent="ppPopup"]
 margin_left = 360.0
 margin_top = 475.734
 margin_right = 920.0
@@ -543,3 +582,397 @@ mouse_filter = 2
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="optionPopup" type="Control" parent="."]
+visible = false
+margin_right = 40.0
+margin_bottom = 40.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="blur" type="TextureRect" parent="optionPopup"]
+material = SubResource( 5 )
+margin_right = 1277.0
+margin_bottom = 1283.0
+texture = ExtResource( 24 )
+expand = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="menuImg" type="TextureRect" parent="optionPopup"]
+margin_right = 1280.0
+margin_bottom = 1280.0
+texture = ExtResource( 28 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="optionTitleLabel" type="Label" parent="optionPopup"]
+margin_left = 360.0
+margin_top = 268.417
+margin_right = 920.0
+margin_bottom = 342.417
+mouse_filter = 1
+custom_fonts/font = ExtResource( 33 )
+text = "Game Options:"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="HBoxContainer" type="HBoxContainer" parent="optionPopup"]
+margin_left = 360.0
+margin_top = 595.0
+margin_right = 920.0
+margin_bottom = 723.0
+custom_constants/separation = 16
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="VBoxContainer" type="VBoxContainer" parent="optionPopup"]
+margin_left = 440.0
+margin_top = 380.0
+margin_right = 840.0
+margin_bottom = 970.0
+custom_constants/separation = 26
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="drawBtn" type="TextureButton" parent="optionPopup/VBoxContainer"]
+margin_right = 400.0
+margin_bottom = 128.0
+mouse_filter = 1
+texture_normal = ExtResource( 29 )
+texture_pressed = ExtResource( 29 )
+texture_hover = ExtResource( 32 )
+texture_disabled = ExtResource( 29 )
+texture_focused = ExtResource( 29 )
+
+[node name="resignBtn" type="TextureButton" parent="optionPopup/VBoxContainer"]
+margin_top = 154.0
+margin_right = 400.0
+margin_bottom = 282.0
+mouse_filter = 1
+texture_normal = ExtResource( 30 )
+texture_pressed = ExtResource( 30 )
+texture_hover = ExtResource( 32 )
+texture_disabled = ExtResource( 30 )
+texture_focused = ExtResource( 30 )
+
+[node name="quitBtn" type="TextureButton" parent="optionPopup/VBoxContainer"]
+margin_top = 308.0
+margin_right = 400.0
+margin_bottom = 436.0
+mouse_filter = 1
+texture_normal = ExtResource( 29 )
+texture_pressed = ExtResource( 29 )
+texture_hover = ExtResource( 32 )
+texture_disabled = ExtResource( 29 )
+texture_focused = ExtResource( 29 )
+
+[node name="closeBtn" type="TextureButton" parent="optionPopup/VBoxContainer"]
+margin_top = 462.0
+margin_right = 400.0
+margin_bottom = 590.0
+mouse_filter = 1
+texture_normal = ExtResource( 30 )
+texture_pressed = ExtResource( 30 )
+texture_hover = ExtResource( 32 )
+texture_disabled = ExtResource( 30 )
+texture_focused = ExtResource( 30 )
+
+[node name="drawLabel" type="Label" parent="optionPopup"]
+margin_left = 440.0
+margin_top = 415.481
+margin_right = 840.0
+margin_bottom = 481.481
+custom_fonts/font = ExtResource( 31 )
+text = "Draw"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="resignLabel" type="Label" parent="optionPopup"]
+margin_left = 440.0
+margin_top = 567.22
+margin_right = 840.0
+margin_bottom = 633.22
+custom_fonts/font = ExtResource( 31 )
+text = "Resign"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="quitLabel" type="Label" parent="optionPopup"]
+margin_left = 440.0
+margin_top = 723.0
+margin_right = 840.0
+margin_bottom = 789.0
+custom_fonts/font = ExtResource( 31 )
+text = "Quit Game"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="cancelLabel" type="Label" parent="optionPopup"]
+margin_left = 440.0
+margin_top = 877.441
+margin_right = 840.0
+margin_bottom = 943.441
+custom_fonts/font = ExtResource( 31 )
+text = "Cancel"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="drawPopup" type="Control" parent="."]
+visible = false
+margin_right = 40.0
+margin_bottom = 40.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="blur" type="TextureRect" parent="drawPopup"]
+material = SubResource( 5 )
+margin_right = 1277.0
+margin_bottom = 1283.0
+texture = ExtResource( 24 )
+expand = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="menuImg" type="TextureRect" parent="drawPopup"]
+margin_right = 1280.0
+margin_bottom = 1280.0
+texture = ExtResource( 25 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ppTitleLabel" type="Label" parent="drawPopup"]
+margin_left = 360.0
+margin_top = 475.734
+margin_right = 920.0
+margin_bottom = 549.734
+mouse_filter = 1
+custom_fonts/font = ExtResource( 33 )
+text = "Accept Draw:"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="HBoxContainer" type="HBoxContainer" parent="drawPopup"]
+margin_left = 416.0
+margin_top = 580.0
+margin_right = 864.0
+margin_bottom = 723.0
+custom_constants/separation = 48
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="yesBtn" type="TextureButton" parent="drawPopup/HBoxContainer"]
+margin_right = 200.0
+margin_bottom = 143.0
+mouse_filter = 1
+texture_normal = ExtResource( 39 )
+texture_pressed = ExtResource( 39 )
+texture_hover = ExtResource( 40 )
+texture_disabled = ExtResource( 39 )
+texture_focused = ExtResource( 39 )
+
+[node name="noBtn" type="TextureButton" parent="drawPopup/HBoxContainer"]
+margin_left = 248.0
+margin_right = 448.0
+margin_bottom = 143.0
+mouse_filter = 1
+texture_normal = ExtResource( 38 )
+texture_pressed = ExtResource( 38 )
+texture_hover = ExtResource( 40 )
+texture_disabled = ExtResource( 38 )
+texture_focused = ExtResource( 38 )
+
+[node name="yesLabel" type="Label" parent="drawPopup"]
+margin_left = 472.723
+margin_top = 616.0
+margin_right = 558.723
+margin_bottom = 682.0
+custom_fonts/font = ExtResource( 31 )
+text = "Yes"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="noLabel" type="Label" parent="drawPopup"]
+margin_left = 731.102
+margin_top = 616.0
+margin_right = 801.102
+margin_bottom = 682.0
+custom_fonts/font = ExtResource( 31 )
+text = "No"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="winPopup" type="Control" parent="."]
+visible = false
+margin_right = 40.0
+margin_bottom = 40.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="blur" type="TextureRect" parent="winPopup"]
+material = SubResource( 5 )
+margin_right = 1277.0
+margin_bottom = 1283.0
+texture = ExtResource( 24 )
+expand = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="menuImg" type="TextureRect" parent="winPopup"]
+margin_right = 1280.0
+margin_bottom = 1280.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="VBoxContainer" type="VBoxContainer" parent="winPopup"]
+margin_left = 150.0
+margin_top = 830.0
+margin_right = 550.0
+margin_bottom = 1112.0
+custom_constants/separation = 26
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="quitBtn" type="TextureButton" parent="winPopup/VBoxContainer"]
+margin_top = 154.0
+margin_right = 400.0
+margin_bottom = 282.0
+mouse_filter = 1
+texture_normal = ExtResource( 30 )
+texture_pressed = ExtResource( 30 )
+texture_hover = ExtResource( 32 )
+texture_disabled = ExtResource( 30 )
+texture_focused = ExtResource( 30 )
+
+[node name="playAgainBtn" type="TextureButton" parent="winPopup/VBoxContainer"]
+visible = false
+margin_right = 400.0
+margin_bottom = 128.0
+mouse_filter = 1
+texture_normal = ExtResource( 29 )
+texture_pressed = ExtResource( 29 )
+texture_hover = ExtResource( 32 )
+texture_disabled = ExtResource( 29 )
+texture_focused = ExtResource( 29 )
+
+[node name="quitLabel" type="Label" parent="winPopup"]
+margin_left = 150.0
+margin_top = 865.389
+margin_right = 550.0
+margin_bottom = 931.389
+custom_fonts/font = ExtResource( 31 )
+text = "Quit"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="playAgainLabel" type="Label" parent="winPopup"]
+visible = false
+margin_left = 150.0
+margin_top = 1017.13
+margin_right = 550.0
+margin_bottom = 1083.13
+custom_fonts/font = ExtResource( 31 )
+text = "Play Again"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="menuPopup" type="Control" parent="."]
+margin_right = 40.0
+margin_bottom = 40.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="blur" type="TextureRect" parent="menuPopup"]
+material = SubResource( 6 )
+margin_right = 1277.0
+margin_bottom = 1283.0
+texture = ExtResource( 24 )
+expand = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="menuImg" type="TextureRect" parent="menuPopup"]
+margin_right = 1280.0
+margin_bottom = 1280.0
+texture = ExtResource( 41 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="VBoxContainer" type="VBoxContainer" parent="menuPopup"]
+margin_left = 150.0
+margin_top = 658.0
+margin_right = 550.0
+margin_bottom = 786.0
+custom_constants/separation = 26
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="playBtn" type="TextureButton" parent="menuPopup/VBoxContainer"]
+margin_right = 400.0
+margin_bottom = 128.0
+mouse_filter = 1
+texture_normal = ExtResource( 29 )
+texture_pressed = ExtResource( 29 )
+texture_hover = ExtResource( 32 )
+texture_disabled = ExtResource( 29 )
+texture_focused = ExtResource( 29 )
+
+[node name="playLabel" type="Label" parent="menuPopup"]
+margin_left = 150.0
+margin_top = 690.806
+margin_right = 550.0
+margin_bottom = 756.806
+custom_fonts/font = ExtResource( 31 )
+text = "Play"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+[connection signal="pressed" from="blackOptionBtn" to="pieces" method="_on_optionBtn_pressed"]
+[connection signal="pressed" from="whiteOptionBtn" to="pieces" method="_on_optionBtn_pressed"]
+[connection signal="pressed" from="optionPopup/VBoxContainer/drawBtn" to="pieces" method="_on_drawBtn_pressed"]
+[connection signal="pressed" from="optionPopup/VBoxContainer/resignBtn" to="pieces" method="_on_resignBtn_pressed"]
+[connection signal="pressed" from="optionPopup/VBoxContainer/quitBtn" to="pieces" method="_on_quitBtn_pressed"]
+[connection signal="pressed" from="optionPopup/VBoxContainer/closeBtn" to="pieces" method="_on_closeBtn_pressed"]
+[connection signal="pressed" from="drawPopup/HBoxContainer/yesBtn" to="pieces" method="_on_yesBtn_pressed"]
+[connection signal="pressed" from="drawPopup/HBoxContainer/noBtn" to="pieces" method="_on_noBtn_pressed"]
+[connection signal="pressed" from="winPopup/VBoxContainer/quitBtn" to="pieces" method="_on_quitBtn_pressed"]
+[connection signal="pressed" from="winPopup/VBoxContainer/playAgainBtn" to="pieces" method="_on_playAgainBtn_pressed"]
+[connection signal="pressed" from="menuPopup/VBoxContainer/playBtn" to="pieces" method="_on_playBtn_pressed"]

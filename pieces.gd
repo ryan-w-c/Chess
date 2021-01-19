@@ -1,13 +1,14 @@
 extends TileMap
 
-
 onready var highlightTileMap = get_parent().get_node("highlight")
 onready var moveTileMap = get_parent().get_node("move")
+onready var blackGear = get_parent().get_node("blackOptionBtn")
+onready var whiteGear = get_parent().get_node("whiteOptionBtn")
 var whiteTurn : bool = true
 var inCheck : bool = false
 var checked : bool = false #if we have checked for a check
 var pawnBool : bool = false
-var disableSelect : bool = false
+var disableSelect : bool = true
 var whiteKingMoved : bool = false
 var whiteKingRookMoved : bool = false
 var whiteQueenRookMoved : bool = false
@@ -34,7 +35,6 @@ var pawnCount = 0 #needed for en passant
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	# TODO set up board
 	emptyCell = world_to_map(get_global_mouse_position().snapped(Vector2(0, 0)))
 	last = emptyCell
 	selectedCell = emptyCell
@@ -43,7 +43,6 @@ func _ready():
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	# add another boolean to only run once per turn
 	if (!checked):
 		checked = true
 		if (whiteTurn):
@@ -56,13 +55,19 @@ func _process(delta):
 			if (!indirectCheckMoveDict.empty() || inCheck):
 				findMoves(6, 13)
 			if (inCheck && checkMoveDict.size() - 1 < checkCount && checkMoveDict.get(whiteKingCell).empty()):
-				#TODO game over screen
 				#checkmate
-				print("checkmate")
-			elif (checkMoveDict.size() < checkCount && checkMoveDict.get(whiteKingCell).empty()):
-				#Todo game over screen
+				disableSelect = true
+				var pop = get_parent().get_node("winPopup/menuImg")
+				pop.texture = load("res://img/blackWin.png")
+				pop = get_parent().get_node("winPopup")
+				pop.visible = true
+			elif ((checkMoveDict.size() - 1 < checkCount || (anyMoves(6, 13))) && checkMoveDict.get(whiteKingCell).empty()):
 				#stalemate
-				print("Stalemate")
+				disableSelect = true
+				var pop = get_parent().get_node("winPopup/menuImg")
+				pop.texture = load("res://img/stalemate.png")
+				pop = get_parent().get_node("winPopup")
+				pop.visible = true
 		else:
 			kingMove(0, 7, blackKingCell, 9, 10, 1, 11, 7, 12)
 			pawnKnightCheck(blackKingCell, 9, 10, 1)
@@ -72,13 +77,19 @@ func _process(delta):
 			if (!indirectCheckMoveDict.empty() || inCheck):
 				findMoves(0, 7)
 			if (inCheck && checkMoveDict.size() - 1 < checkCount && checkMoveDict.get(blackKingCell).empty()):
-				#TODO game over screen
 				#checkmate
-				print("checkmate")
-			elif (checkMoveDict.size() < checkCount && checkMoveDict.get(blackKingCell).empty()):
-				#Todo game over screen
+				disableSelect = true
+				var pop = get_parent().get_node("winPopup/menuImg")
+				pop.texture = load("res://img/whiteWin.png")
+				pop = get_parent().get_node("winPopup")
+				pop.visible = true
+			elif ((checkMoveDict.size() - 1 < checkCount || (anyMoves(0, 7))) && checkMoveDict.get(blackKingCell).empty()):
 				#stalemate
-				print("Stalemate")
+				disableSelect = true
+				var pop = get_parent().get_node("winPopup/menuImg")
+				pop.texture = load("res://img/stalemate.png")
+				pop = get_parent().get_node("winPopup")
+				pop.visible = true
 	if (!disableSelect):
 		hover()
 		if (Input.is_action_just_released("on_left_click")):
@@ -86,7 +97,18 @@ func _process(delta):
 				select(6, 13)
 			else:
 				select(0, 7)
-		
+
+func anyMoves(start, end):
+	for i in get_used_cells():
+		var tempCell = get_cellv(i)
+		if tempCell > start && tempCell < end:
+			if checkMoveDict.has(i):
+				if !checkMoveDict.get(i).empty():
+					return false
+			else:
+				return false
+	return true
+
 func pawnKnightCheck(kingCell, knight, pawn, pawnDir):
 	# puts cells into finalCheckList if pawn or knigh is checking king
 	#knight:
@@ -736,9 +758,7 @@ func showMoves(start, end, knightKing = false):
 
 func pawnMove(start, end, pawnDir, row, check = false):
 	# pawn is selected display cells where they can move
-	# TODO en passant special move
 	var tempCell
-
 	if (check):
 		# pawns in start position
 		if (y_coord == row):
@@ -955,6 +975,14 @@ func checkKingMove(start, end, kingCell, knight, pawn, pawnDir, queen, bishop, r
 	if (get_cell(kingCell.x - 1, kingCell.y + pawnDir) == pawn):
 		return true
 		
+	#king:
+	if whiteTurn:
+		if abs(kingCell.x - blackKingCell.x) < 2 && abs(kingCell.y - blackKingCell.y) < 2:
+			return true
+	else:
+		if abs(kingCell.x - whiteKingCell.x) < 2 && abs(kingCell.y - whiteKingCell.y) < 2:
+			return true
+		
 	if (indirectDiagonalCheck(start, end, queen, bishop, kingCell, true)):
 		return true
 	else:
@@ -1148,8 +1176,12 @@ func resetTurn():
 	selectedCell = emptyCell
 	moveTileMap.clear()
 	if (whiteTurn):
+		blackGear.visible = true
+		whiteGear.hide()
 		whiteTurn = false
 	else:
+		whiteGear.visible = true
+		blackGear.hide()
 		whiteTurn = true
 	if pawnCount > 0:
 		pawnCount -= 1
@@ -1263,3 +1295,58 @@ func select(start, end):
 	else:
 		makeMove()
 		
+
+
+func _on_drawBtn_pressed():
+	var pop = get_parent().get_node("optionPopup")
+	pop.hide()
+	pop = get_parent().get_node("drawPopup")
+	pop.visible = true
+
+
+func _on_resignBtn_pressed():
+	disableSelect = true
+	var pop = get_parent().get_node("winPopup/menuImg")
+	if (whiteTurn):
+		pop.texture = load("res://img/blackWin.png")
+	else:
+		pop.texture = load("res://img/whiteWin.png")
+	pop = get_parent().get_node("winPopup")
+	pop.visible = true
+
+func _on_quitBtn_pressed():
+	get_tree().reload_current_scene()
+
+func _on_closeBtn_pressed():
+	var pop = get_parent().get_node("optionPopup")
+	pop.hide()
+	disableSelect = false
+
+func _on_optionBtn_pressed():
+	disableSelect = true
+	highlightTileMap.set_cellv(selectedCell, -1)
+	selectedCell = emptyCell
+	moveTileMap.clear()
+	var pop = get_parent().get_node("optionPopup")
+	pop.visible = true
+
+func _on_noBtn_pressed():
+	var pop = get_parent().get_node("drawPopup")
+	pop.hide()
+	disableSelect = false
+
+func _on_yesBtn_pressed():
+	var pop = get_parent().get_node("drawPopup")
+	pop.hide()
+	pop = get_parent().get_node("winPopup/menuImg")
+	pop.texture = load("res://img/draw.png")
+	pop = get_parent().get_node("winPopup")
+	pop.visible = true
+
+func _on_playAgainBtn_pressed():
+	get_tree().reload_current_scene()
+
+func _on_playBtn_pressed():
+	var pop = get_parent().get_node("menuPopup")
+	pop.hide()
+	disableSelect = false
